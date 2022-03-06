@@ -15,9 +15,10 @@ const TWITTER_HANDLE = '_buildspace';
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 // Add the domain you will be minting
 const tld = '.wagmi';
-const CONTRACT_ADDRESS = '0xDa10e2E6e239cf4d3D68d3F88a0aD2587E42BCc0';
+const CONTRACT_ADDRESS = '0xa801f4aCAC57b5234B5629925Bc6430B8240e48a';
 
 const App = () => {
+	const [editing, setEditing] = useState(false);
 	const [currentAccount, setCurrentAccount] = useState('');
 	const [network, setNetwork] = useState('');
 	// Add some state data propertie
@@ -110,6 +111,12 @@ const App = () => {
 					
 					setRecord('');
 					setDomain('');
+
+
+					// Call fetchMints after 2 seconds
+					setTimeout(() => {
+						fetchMints();
+					}, 2000);
 				}
 				else {
 					alert("Transaction failed! Please try again");
@@ -119,6 +126,74 @@ const App = () => {
 	  catch(error){
 		console.log(error);
 	  }
+	}
+
+	const [mints, setMints] = useState([]);
+ console.log('mints :', mints);
+	// Add this function anywhere in your component (maybe after the mint function)
+	const fetchMints = async () => {
+		try {
+			const { ethereum } = window;
+			if (ethereum) {
+				// You know all this
+				const provider = new ethers.providers.Web3Provider(ethereum);
+				const signer = provider.getSigner();
+				const contract = new ethers.Contract(CONTRACT_ADDRESS, contractAbi.abi, signer);
+					
+				// Get all the domain names from our contract
+				const names = await contract.getAllNames();
+    console.log('names :', names);
+					
+				// For each name, get the record and the address
+				const mintRecords = await Promise.all(names.map(async (name) => {
+				const mintRecord = await contract.records(name);
+				const owner = await contract.domains(name);
+
+				return {
+					id: names.indexOf(name),
+					name: name,
+					record: mintRecord,
+					owner: owner,
+				};
+			}));
+
+			console.log("MINTS FETCHED ", mintRecords);
+			setMints(mintRecords);
+			}
+		} catch(error){
+			console.log(error);
+		}
+	}
+
+	useEffect(() => {
+		if (network === 'Polygon Mumbai Testnet') {
+			fetchMints();
+		}
+	}, [currentAccount, network]);
+
+	const updateDomain = async () => {
+		if (!record || !domain) { return }
+		setEditing(true);
+		console.log("Updating domain", domain, "with record", record);
+		  try {
+			const { ethereum } = window;
+			if (ethereum) {
+				const provider = new ethers.providers.Web3Provider(ethereum);
+				const signer = provider.getSigner();
+				const contract = new ethers.Contract(CONTRACT_ADDRESS, contractAbi.abi, signer);
+	
+				let tx = await contract.setRecord(domain, record);
+				await tx.wait();
+				console.log("Record set https://mumbai.polygonscan.com/tx/"+tx.hash);
+	
+				fetchMints();
+				setRecord('');
+				setDomain('');
+			}
+		  } catch(error) {
+			console.log(error);
+		  }
+		  setEditing(false);
 	}
 
 	// Render methods
@@ -172,6 +247,8 @@ const App = () => {
 			alert('MetaMask is not installed. Please install it to use this app: https://metamask.io/download.html');
 		} 
 	}	
+	
+	
 
 	
 	// Form to enter domain name and data
@@ -205,22 +282,73 @@ const App = () => {
 					onChange={e => setRecord(e.target.value)}
 				/>
 
-				<div className="button-container">
-					<button className='cta-button mint-button' disabled={null} onClick={mintDomain}>
-						Mint
-					</button>  
-					{/* <button className='cta-button mint-button' disabled={null} onClick={null}>
-						Set data
-					</button>   */}
-				</div>
+				{/* If the editing variable is true, return the "Set record" and "Cancel" button */}
+				{editing ? (
+						<div className="button-container">
+							// This will call the updateDomain function we just made
+							<button className='cta-button mint-button' disabled={editing} onClick={updateDomain}>
+								Set record
+							</button>  
+							// This will let us get out of editing mode by setting editing to false
+							<button className='cta-button mint-button' onClick={() => {setEditing(false)}}>
+								Cancel
+							</button>  
+						</div>
+					) : (
+						// If editing is not true, the mint button will be returned instead
+						<button className='cta-button mint-button' disabled={editing} onClick={mintDomain}>
+							Mint
+						</button>  
+					)}
 
 			</div>
 		);
 	}
-  
+    
 	useEffect(() => {
 		checkIfWalletIsConnected();
 	}, []);
+
+
+
+// This will take us into edit mode and show us the edit buttons!
+const editRecord = (name) => {
+	console.log("Editing record for", name);
+	setEditing(true);
+	setDomain(name);
+}
+
+	// Add this render function next to your other render functions
+const renderMints = () => {
+	if (currentAccount && mints.length > 0) {
+		return (
+			<div className="mint-container">
+				<p className="subtitle"> Recently minted domains!</p>
+				<div className="mint-list">
+					{ mints.map((mint, index) => {
+						return (
+							<div className="mint-item" key={index}>
+								<div className='mint-row'>
+									<a className="link" href={`https://testnets.opensea.io/assets/mumbai/${CONTRACT_ADDRESS}/${mint.id}`} target="_blank" rel="noopener noreferrer">
+										<p className="underlined">{' '}{mint.name}{tld}{' '}</p>
+									</a>
+									{/* If mint.owner is currentAccount, add an "edit" button*/}
+									{ mint.owner.toLowerCase() === currentAccount.toLowerCase() ?
+										<button className="edit-button" onClick={() => editRecord(mint.name)}>
+											<img className="edit-icon" src="https://img.icons8.com/metro/26/000000/pencil.png" alt="Edit button" />
+										</button>
+										:
+										null
+									}
+								</div>
+					<p> {mint.record} </p>
+				</div>)
+				})}
+			</div>
+		</div>);
+	}
+};
+
 
 	return (
 		<div className="App">
@@ -241,6 +369,7 @@ const App = () => {
 				{!currentAccount && renderNotConnectedContainer()}
 				{/* Render the input form if an account is connected */}
 				{currentAccount && renderInputForm()}
+				{mints && renderMints()}
 				
 				<div className="footer-container">
 					<img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
