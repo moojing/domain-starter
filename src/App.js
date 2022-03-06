@@ -285,11 +285,11 @@ const App = () => {
 				{/* If the editing variable is true, return the "Set record" and "Cancel" button */}
 				{editing ? (
 						<div className="button-container">
-							// This will call the updateDomain function we just made
+							{/* // This will call the updateDomain function we just made */}
 							<button className='cta-button mint-button' disabled={editing} onClick={updateDomain}>
 								Set record
 							</button>  
-							// This will let us get out of editing mode by setting editing to false
+							{/* // This will let us get out of editing mode by setting editing to false */}
 							<button className='cta-button mint-button' onClick={() => {setEditing(false)}}>
 								Cancel
 							</button>  
