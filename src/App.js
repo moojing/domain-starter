@@ -19,6 +19,7 @@ const CONTRACT_ADDRESS = '0xa801f4aCAC57b5234B5629925Bc6430B8240e48a';
 
 const App = () => {
 	const [editing, setEditing] = useState(false);
+	const [loading, setLoading] = useState(false);
 	const [currentAccount, setCurrentAccount] = useState('');
 	const [network, setNetwork] = useState('');
 	// Add some state data propertie
@@ -173,7 +174,7 @@ const App = () => {
 
 	const updateDomain = async () => {
 		if (!record || !domain) { return }
-		setEditing(true);
+		setLoading(true);
 		console.log("Updating domain", domain, "with record", record);
 		  try {
 			const { ethereum } = window;
@@ -193,7 +194,7 @@ const App = () => {
 		  } catch(error) {
 			console.log(error);
 		  }
-		  setEditing(false);
+		  setLoading(false);
 	}
 
 	// Render methods
@@ -286,7 +287,7 @@ const App = () => {
 				{editing ? (
 						<div className="button-container">
 							{/* // This will call the updateDomain function we just made */}
-							<button className='cta-button mint-button' disabled={editing} onClick={updateDomain}>
+							<button className='cta-button mint-button' disabled={loading} onClick={updateDomain}>
 								Set record
 							</button>  
 							{/* // This will let us get out of editing mode by setting editing to false */}
@@ -296,7 +297,7 @@ const App = () => {
 						</div>
 					) : (
 						// If editing is not true, the mint button will be returned instead
-						<button className='cta-button mint-button' disabled={editing} onClick={mintDomain}>
+						<button className='cta-button mint-button' disabled={loading} onClick={mintDomain}>
 							Mint
 						</button>  
 					)}
