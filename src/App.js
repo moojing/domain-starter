@@ -84,7 +84,7 @@ const App = () => {
 			return;
 		}
 		// Calculate price based on length of domain (change this to match your contract)	
-		// 3 chars = 0.5 MATIC, 4 chars = 0.3 MATIC, 5 or more = 0.1 MATIC
+		// 3 chars = 0.005 MATIC, 4 chars = 0.003 MATIC, 5 or more = 0.001 MATIC
 		const price = domain.length === 3 ? '0.005' : domain.length === 4 ? '0.003' : '0.001';
 		console.log("Minting domain", domain, "with price", price);
 	  try {
